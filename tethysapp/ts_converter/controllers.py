@@ -107,7 +107,7 @@ def home(request):
         #unfinished support for zipped files
         if zip_string.find(request.GET['res_id']) != 0:
             zip_bool = True
-            url_zip = "http://localhost:8000/static/data_cart/waterml/"+request.GET['res_id']
+            url_zip = "http://appsdev.hydroshare.org/static/data_cart/waterml/"+request.GET['res_id']
             waterml(url_zip)
             #filename_zip = file_unzipper(url_zip)
             #print "happy"
@@ -172,7 +172,7 @@ def home(request):
                 file_temp.close()
                 print file_temp.name
 
-                zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
+                zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
                 print zipped_url
                 response = urllib2.urlopen(zipped_url)
                 html = response.read()
