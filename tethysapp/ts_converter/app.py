@@ -26,9 +26,11 @@ class TsConverter(TethysAppBase):
 
                     UrlMap(name='View_R_Code',
                            url='View_R_Code',
-                           controller='ts_converter.controllers.View_R_Code')
+                           controller='ts_converter.controllers.View_R_Code'),
 
-
+                    UrlMap(name='temp_waterml',
+                           url='temp_waterml/{id}',
+                           controller='ts_converter.controllers.temp_waterml')
         )
 
         return url_maps
@@ -45,8 +47,6 @@ class TsConverter(TethysAppBase):
                                   initializer='init_stores:init_rscript_db',
                                   spatial=False
                                                 )
-
-
         )
 
         return stores

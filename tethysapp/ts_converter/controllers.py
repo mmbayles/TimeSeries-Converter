@@ -5,10 +5,13 @@ from owslib.wps import WebProcessingService
 from owslib.wps import printInputOutput
 from owslib.wps import monitorExecution
 from owslib.wps import WPSExecution
+from django.core.servers.basehttp import FileWrapper
+from django.http import HttpResponse
 #from tethys_apps.sdk import list_wps_service_engines
 import xml.etree.ElementTree as ET
 import sys
 import requests
+import tempfile
 import csv
 from datetime import datetime
 import urllib2
@@ -36,9 +39,19 @@ def restcall(request,branch,res_id,filename):
     return render(request, 'ts_converter/home.html', context)
 #Normal Get or Post Request
 #http://dev.hydroshare.org/hsapi/resource/72b1d67d415b4d949293b1e46d02367d/files/referencetimeseries-2_23_2015-wml_2_0.wml/
+
 def View_R_Code(request):
     context = View_R()
     return render(request, 'ts_converter/View_R_Code.html', context)
+
+def temp_waterml(request,id):
+
+    base_path = "/tmp/"
+    file_path = base_path + id
+    response = HttpResponse(FileWrapper(open(file_path)), content_type='application/xml')
+
+    return response
+
 
 def home(request):
     url_wml=None
@@ -87,6 +100,7 @@ def home(request):
     #test
     #example of possible launch string
     #http://localhost:8000/apps/ts-converter/?input=775-missouri-215-morrisville-mo-65710-usa-2015-09-08-05-13-39-6651.zip&source=hydroshare
+
     if request.GET and 'res_id' in request.GET and 'src' in request.GET:
         zip_string = ".zip"
         outside_input = True
@@ -94,6 +108,7 @@ def home(request):
         if zip_string.find(request.GET['res_id']) != 0:
             zip_bool = True
             url_zip = "http://localhost:8000/static/data_cart/waterml/"+request.GET['res_id']
+            waterml(url_zip)
             #filename_zip = file_unzipper(url_zip)
             #print "happy"
         if request.GET['src'] == "cuahsi":
@@ -108,23 +123,21 @@ def home(request):
     #zip file test
 
 
-    # counter2 = 0
+
     # r = requests.get(url_zip)
     # z = zipfile.ZipFile(StringIO.StringIO(r.content))
     # file_list = z.namelist()
-    #
-    #
+    # f = tempfile.mkdtemp()
+    # print f
     # for  file in file_list[1:]:
-    #     counter2 = counter2 +1
     #     joe1 = z.read(file)
+    #     file_temp = tempfile.NamedTemporaryFile(prefix = file, delete =False)
+    #     file_temp.name
+    #     file_temp.write(joe1)
+    #     file_temp.close()
     #
-    #     graph_original = Original_Checker(joe1)
-    #     #print joe
-    # #print file_list
+    # #end zip test
 
-
-
-    #end zip test
 
 
 
@@ -138,6 +151,46 @@ def home(request):
 
     if request.POST:
         Current_r = request.POST['select_r_script']
+
+
+
+      #new code for zip_file
+    # print zip_bool
+    if zip_bool == True:
+
+        r = requests.get(url_zip)
+        z = zipfile.ZipFile(StringIO.StringIO(r.content))
+        file_list = z.namelist()
+        #td = tempfile.mkdtemp()
+        #print td
+        try:
+            for  file in file_list[1:]:
+                joe1 = z.read(file)
+
+                file_temp = tempfile.NamedTemporaryFile(delete = False)
+                file_temp.write(joe1)
+                file_temp.close()
+                print file_temp.name
+
+                zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
+                print zipped_url
+                response = urllib2.urlopen(zipped_url)
+                html = response.read()
+                url2 = URL(url = zipped_url)
+                session = SessionMaker()
+                session.add(url2)
+                session.commit()
+                session.close()
+        except etree.XMLSyntaxError as e: #checks to see if data is an xml
+            print "Error:Not XML"
+            #quit("not valid xml")
+        except ValueError, e: #checks to see if Url is valid
+            print "Error:invalid Url"
+        except TypeError, e: #checks to see if xml is formatted correctly
+            print "Error:string indices must be integers not str"
+    # end code for zip_file
+
+
 
 
     # this block of code will add a time series to the legend and graph the result
@@ -182,18 +235,15 @@ def home(request):
                     cuahsi_url = 'http://appsdev.hydroshare.org/static/data_cart/waterml/' + request.GET['res_id']
                     response = urllib2.urlopen(cuahsi_url)
                     url1 = URL(url=cuahsi_url)
-
                 else:
                     response = urllib2.urlopen(request.POST['url_name'])
                     url1 = URL(url = request.POST['url_name'])
                 # zip file name
-
                 html = response.read()
                 graph_original = Original_Checker(html)
                 url_data_validation.append(graph_original['site_name'])
-                session = SessionMaker()
-                #url1 = URL(url = str(graph_original)) changed before trip
 
+                session = SessionMaker()
                 session.add(url1)
                 session.commit()
                 session.close()
@@ -420,6 +470,7 @@ def run_wps(process_id,input,output):
     url_wps = 'http://appsdev.hydroshare.org:8282/wps/WebProcessingService'
 
     wps_request = urllib2.Request(url_wps,request)
+    print "wps_request" + wps_request
     wps_open = urllib2.urlopen(wps_request)
     wps_read = wps_open.read()
 
@@ -477,3 +528,17 @@ def upload_to_hs(id,file):
     hs = HydroShare(auth=auth)
     fpath = '/path/to/somefile.txt'
     resource_id = hs.addResourceFile('id', file)
+
+def waterml(url_zip):
+    waterml =[]
+    r = requests.get(url_zip)
+    z = zipfile.ZipFile(StringIO.StringIO(r.content))
+    file_list = z.namelist()
+
+    for  file in file_list[1:]:
+        joe1 = z.read(file)
+        waterml.append(joe1)
+
+    return{'waterml':waterml}
+
+
