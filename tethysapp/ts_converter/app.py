@@ -29,8 +29,12 @@ class TsConverter(TethysAppBase):
                            controller='ts_converter.controllers.View_R_Code'),
 
                     UrlMap(name='temp_waterml',
-                           url='temp_waterml/{id}',
-                           controller='ts_converter.controllers.temp_waterml')
+                           url='temp_waterml/{folder}/{id}',
+                           controller='ts_converter.controllers.temp_waterml'),
+
+                    UrlMap(name='delete-file',
+                           url='ts_converter/delete-file',
+                           controller='ts_converter.controllers.delete_file')
         )
 
         return url_maps

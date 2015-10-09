@@ -7,6 +7,7 @@ from owslib.wps import monitorExecution
 from owslib.wps import WPSExecution
 from django.core.servers.basehttp import FileWrapper
 from django.http import HttpResponse
+import shutil
 #from tethys_apps.sdk import list_wps_service_engines
 import xml.etree.ElementTree as ET
 import sys
@@ -29,6 +30,8 @@ import json
 #Base_Url_HydroShare REST API
 url_base='http://{0}.hydroshare.org/hsapi/resource/{1}/files/{2}'
 ##Call in Rest style
+temp_dir = None
+
 def restcall(request,branch,res_id,filename):
     print "restcall",branch,res_id,filename
     url_wml= url_base.format(branch,res_id,filename)
@@ -44,14 +47,21 @@ def View_R_Code(request):
     context = View_R()
     return render(request, 'ts_converter/View_R_Code.html', context)
 
-def temp_waterml(request,id):
-
+def temp_waterml(request,folder,id):
     base_path = "/tmp/"
-    file_path = base_path + id
+    file_path = base_path + folder+"/"+id
     response = HttpResponse(FileWrapper(open(file_path)), content_type='application/xml')
-
     return response
 
+def delete_file(request):
+    global temp_dir
+    session = SessionMaker()
+    urls = session.query(URL).all()#clears the database of the urls.
+    for url in urls:
+        session.delete(url)
+        session.commit()
+    session.close()
+    shutil.rmtree(temp_dir)#deletes the temp files associated with the zip file
 
 def home(request):
     url_wml=None
@@ -82,14 +92,7 @@ def home(request):
     #Cuashi Graph test
     #test_cuashi = file_unzipper("https://ziptest.blob.core.windows.net/time-series/1396-utah-132-nephi-ut-84648-usa-2015-09-08-05-36-42-1881.zip")
     #chartPara(test_cuashi)
-
-
-
-
-
-
-
-
+    global temp_dir
 
 
 
@@ -107,6 +110,7 @@ def home(request):
         #unfinished support for zipped files
         if zip_string.find(request.GET['res_id']) != 0:
             zip_bool = True
+            #url_zip = "http://localhost:8000/static/data_cart/waterml/"+request.GET['res_id']
             url_zip = "http://appsdev.hydroshare.org/static/data_cart/waterml/"+request.GET['res_id']
             waterml(url_zip)
             #filename_zip = file_unzipper(url_zip)
@@ -142,8 +146,6 @@ def home(request):
 
 
 
-
-
     if request.POST and 'hydroshare' in request.POST:
         show_hydroshare = True
     if request.POST and 'water_ml' in request.POST:
@@ -157,23 +159,20 @@ def home(request):
       #new code for zip_file
     # print zip_bool
     if zip_bool == True:
-
         r = requests.get(url_zip)
         z = zipfile.ZipFile(StringIO.StringIO(r.content))
         file_list = z.namelist()
         #td = tempfile.mkdtemp()
         #print td
         try:
+            temp_dir = tempfile.mkdtemp()
             for  file in file_list[1:]:
                 joe1 = z.read(file)
-
-                file_temp = tempfile.NamedTemporaryFile(delete = False)
+                file_temp = tempfile.NamedTemporaryFile(delete = False, dir = temp_dir)
                 file_temp.write(joe1)
                 file_temp.close()
-                print file_temp.name
-
+                #zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
                 zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
-                print zipped_url
                 response = urllib2.urlopen(zipped_url)
                 html = response.read()
                 url2 = URL(url = zipped_url)
@@ -446,7 +445,8 @@ def home(request):
 'show_waterml':show_waterml,
 'upload_hs':upload_hs
 }
-    
+
+
     return render(request, 'ts_converter/home.html', context)
 
 def run_wps(process_id,input,output):
@@ -470,7 +470,7 @@ def run_wps(process_id,input,output):
     url_wps = 'http://appsdev.hydroshare.org:8282/wps/WebProcessingService'
 
     wps_request = urllib2.Request(url_wps,request)
-    print "wps_request" + wps_request
+    print wps_request
     wps_open = urllib2.urlopen(wps_request)
     wps_read = wps_open.read()
 
