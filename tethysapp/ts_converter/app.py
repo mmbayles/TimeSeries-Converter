@@ -7,9 +7,9 @@ class TsConverter(TethysAppBase):
     Tethys app class for ts converter.
     """
 
-    name = 'ts converter'
+    name = 'HydroScripteR'
     index = 'ts_converter:home'
-    icon = 'ts_converter/images/icon.gif'
+    icon = 'ts_converter/images/hydro.gif'
     package = 'ts_converter'
     root_url = 'ts_converter'
     color = '#f1c40f'

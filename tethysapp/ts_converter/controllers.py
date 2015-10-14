@@ -77,6 +77,7 @@ def home(request):
     r_script = None
     script_test =[]
     legend = []
+    url_check =[]
     download_bool = False
     string_download = None
     url_data_validation=[]
@@ -95,10 +96,6 @@ def home(request):
     global temp_dir
 
 
-
-
-
-
     #https://ziptest.blob.core.windows.net/time-series/1396-utah-132-nephi-ut-84648-usa-2015-09-08-05-36-42-1881.zip
     #test
     #example of possible launch string
@@ -112,39 +109,11 @@ def home(request):
             zip_bool = True
             #url_zip = "http://localhost:8000/static/data_cart/waterml/"+request.GET['res_id']
             url_zip = "http://appsdev.hydroshare.org/static/data_cart/waterml/"+request.GET['res_id']
-            waterml(url_zip)
-            #filename_zip = file_unzipper(url_zip)
-            #print "happy"
         if request.GET['src'] == "cuahsi":
             show_cuahsi = True
 
         elif request.GET['src'] == "hydroshare":
             show_hydroshare = True
-
-
-
-
-    #zip file test
-
-
-
-    # r = requests.get(url_zip)
-    # z = zipfile.ZipFile(StringIO.StringIO(r.content))
-    # file_list = z.namelist()
-    # f = tempfile.mkdtemp()
-    # print f
-    # for  file in file_list[1:]:
-    #     joe1 = z.read(file)
-    #     file_temp = tempfile.NamedTemporaryFile(prefix = file, delete =False)
-    #     file_temp.name
-    #     file_temp.write(joe1)
-    #     file_temp.close()
-    #
-    # #end zip test
-
-
-
-
 
     if request.POST and 'hydroshare' in request.POST:
         show_hydroshare = True
@@ -162,38 +131,43 @@ def home(request):
         r = requests.get(url_zip)
         z = zipfile.ZipFile(StringIO.StringIO(r.content))
         file_list = z.namelist()
-        #td = tempfile.mkdtemp()
-        #print td
-        try:
-            temp_dir = tempfile.mkdtemp()
-            for  file in file_list[1:]:
-                joe1 = z.read(file)
-                file_temp = tempfile.NamedTemporaryFile(delete = False, dir = temp_dir)
-                file_temp.write(joe1)
-                file_temp.close()
-                #zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
-                zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
-                response = urllib2.urlopen(zipped_url)
-                html = response.read()
-                url2 = URL(url = zipped_url)
-                session = SessionMaker()
-                session.add(url2)
-                session.commit()
-                session.close()
-        except etree.XMLSyntaxError as e: #checks to see if data is an xml
-            print "Error:Not XML"
-            #quit("not valid xml")
-        except ValueError, e: #checks to see if Url is valid
-            print "Error:invalid Url"
-        except TypeError, e: #checks to see if xml is formatted correctly
-            print "Error:string indices must be integers not str"
+        session = SessionMaker()
+        urls1 = session.query(URL).all()
+        session.close()
+        #urls1 =[]
+        if urls1 != []:
+            print 'data already loaded'
+        else:
+
+            try:
+                temp_dir = tempfile.mkdtemp()
+
+                for  file in file_list[1:]:
+                    joe1 = z.read(file)
+                    file_temp = tempfile.NamedTemporaryFile(delete = False, dir = temp_dir)
+                    file_temp.write(joe1)
+                    file_temp.close()
+                    #zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
+                    zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
+                    response = urllib2.urlopen(zipped_url)
+                    html = response.read()
+                    url2 = URL(url = zipped_url)
+                    session = SessionMaker()
+                    session.add(url2)
+                    session.commit()
+                    session.close()
+            except etree.XMLSyntaxError as e: #checks to see if data is an xml
+                print "Error:Not XML"
+                #quit("not valid xml")
+            except ValueError, e: #checks to see if Url is valid
+                print "Error:invalid Url"
+            except TypeError, e: #checks to see if xml is formatted correctly
+                print "Error:string indices must be integers not str"
     # end code for zip_file
 
 
-
-
     # this block of code will add a time series to the legend and graph the result
-    if (request.POST and "add_ts" in request.POST) or outside_input:
+    if (request.POST and "add_ts" in request.POST):
         if not outside_input:
             Current_r = request.POST['select_r_script']
 
@@ -224,19 +198,14 @@ def home(request):
             except TypeError, e: #checks to see if xml is formatted correctly
                 print "Error:string indices must be integers not str"
          #adding data through cuashi or from a water ml url
-        if request.POST.get('url_name') != None or show_cuahsi == True:
+        if request.POST.get('url_name') != None:
             try:
-                # if url_zip != None:
-                #     print "zip"
-                #     response = urllib2.urlopen(url_zip)
 
-                if show_cuahsi:
-                    cuahsi_url = 'http://appsdev.hydroshare.org/static/data_cart/waterml/' + request.GET['res_id']
-                    response = urllib2.urlopen(cuahsi_url)
-                    url1 = URL(url=cuahsi_url)
-                else:
-                    response = urllib2.urlopen(request.POST['url_name'])
-                    url1 = URL(url = request.POST['url_name'])
+                request.POST.get('url_name') != ''
+
+                response = urllib2.urlopen(request.POST['url_name'])
+                url1 = URL(url = request.POST['url_name'])
+
                 # zip file name
                 html = response.read()
                 graph_original = Original_Checker(html)
@@ -528,17 +497,5 @@ def upload_to_hs(id,file):
     hs = HydroShare(auth=auth)
     fpath = '/path/to/somefile.txt'
     resource_id = hs.addResourceFile('id', file)
-
-def waterml(url_zip):
-    waterml =[]
-    r = requests.get(url_zip)
-    z = zipfile.ZipFile(StringIO.StringIO(r.content))
-    file_list = z.namelist()
-
-    for  file in file_list[1:]:
-        joe1 = z.read(file)
-        waterml.append(joe1)
-
-    return{'waterml':waterml}
 
 
