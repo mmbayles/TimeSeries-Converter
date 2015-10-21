@@ -27,8 +27,8 @@
       <file leaf-file-name="controllers.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/tethysapp/ts_converter/controllers.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.37962964">
-              <caret line="149" column="29" selection-start-line="149" selection-start-column="29" selection-end-line="149" selection-end-column="29" />
+            <state vertical-scroll-proportion="0.75">
+              <caret line="150" column="29" selection-start-line="150" selection-start-column="29" selection-end-line="150" selection-end-column="29" />
               <folding>
                 <element signature="e#0#35#0" expanded="true" />
               </folding>
@@ -847,8 +847,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/tethysapp/ts_converter/controllers.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.37962964">
-          <caret line="149" column="29" selection-start-line="149" selection-start-column="29" selection-end-line="149" selection-end-column="29" />
+        <state vertical-scroll-proportion="0.75">
+          <caret line="150" column="29" selection-start-line="150" selection-start-column="29" selection-end-line="150" selection-end-column="29" />
           <folding>
             <element signature="e#0#35#0" expanded="true" />
           </folding>

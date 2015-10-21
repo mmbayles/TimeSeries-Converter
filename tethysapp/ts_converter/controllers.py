@@ -147,8 +147,8 @@ def home(request):
                             file_temp = tempfile.NamedTemporaryFile(delete = False, dir = temp_dir)
                             file_temp.write(joe1)
                             file_temp.close()
-                            #zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
-                            zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
+                            zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
+                            #zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
                             response = urllib2.urlopen(zipped_url)
                             html = response.read()
                             url2 = URL(url = zipped_url)
