@@ -91,9 +91,7 @@ def home(request):
     filename_zip = None
     url_zip =None
     zip_bool = False #checks if file is zipped
-    #Cuashi Graph test
-    #test_cuashi = file_unzipper("https://ziptest.blob.core.windows.net/time-series/1396-utah-132-nephi-ut-84648-usa-2015-09-08-05-36-42-1881.zip")
-    #chartPara(test_cuashi)
+
     global temp_dir
     error_message = None #stores any errors with the app
     show_input = False
@@ -103,16 +101,15 @@ def home(request):
         outside_input = True
         if request.GET['src'] == "hydroshare":
             show_hydroshare = True
-        elif request.GET['src']=='cuashi':
+        elif request.GET['src']=='cuahsi':
             zip_string = "zip"
             show_cuahsi =True
             outside_input = True
             #if zip_string.find(request.GET['cuahsi']) != 0:
             zip_bool = True
-            #Make a dictionary to hold the ids passed by CUASHI
-            cuashi_data = request.GET['res_id']#retrieves ids from url
-            cuashi_data = cuashi_data[:-4]#trims the file type from ids
-            cuashi_split = cuashi_data.split(',')#splits ideas by commma
+            #Make a dictionary to hold the ids passed by CUAHSI
+            cuahsi_data = request.GET['res_id']#retrieves ids from url
+            cuahsi_split = cuahsi_data.split(',')#splits ideas by commma
 
     if request.POST and 'hydroshare' in request.POST:
         show_hydroshare = True
@@ -137,7 +134,7 @@ def home(request):
             print 'data already loaded'
         else:
             temp_dir = tempfile.mkdtemp()
-            for id in cuashi_split:
+            for id in cuahsi_split:
                 url_zip = "http://bcc-hiswebclient.azurewebsites.net/CUAHSI/HydroClient/WaterOneFlowArchive/"+id+'/zip'
                 r = requests.get(url_zip)
                 try:
@@ -201,7 +198,7 @@ def home(request):
                 print "Error:invalid Url"
             except TypeError, e: #checks to see if xml is formatted correctly
                 print "Error:string indices must be integers not str"
-         #adding data through cuashi or from a water ml url
+         #adding data through cuahsi or from a water ml url
         if request.POST.get('url_name') != None:
             try:
 
