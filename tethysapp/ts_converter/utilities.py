@@ -63,15 +63,13 @@ def time_to_int(t):
 
 
 def parse_1_0_and_1_1(root):
-    #try:
+    try:
         if 'timeSeriesResponse' in root.tag or 'timeSeries' in root.tag or "soap:Envelope":
             values = OrderedDict()
             for_graph = []
             for_highchart = []
             units, site_name, variable_name, latitude, longitude, methodCode, method, QCcode, QClevel = None, None, None, None, None, None, None, None, None
             unit_is_set = False
-            methodCode_set = False
-            QCcode_set = False
             for element in root.iter():
                 brack_lock = -1
                 if '}' in element.tag:
@@ -83,40 +81,12 @@ def parse_1_0_and_1_1(root):
                         unit_is_set = True
                 if 'value' == tag:
                     values[element.attrib['dateTime']] = element.text
-                    if not methodCode_set:
-                        for a in element.attrib:
-                            if 'methodCode' in a:
-                                methodCode = element.attrib[a]
-                                methodCode_set = True
-                            if 'qualityControlLevelCode' in a:
-                                QCcode = element.attrib[a]
-                                QCcode_set = True
+                if 'noDataValue'==tag:
+                    nodata = element.text
                 if 'siteName' == tag:
                     site_name = element.text
                 if 'variableName' == tag:
                     variable_name = element.text
-                if 'latitude' == tag:
-                    latitude = element.text
-                if 'longitude' == tag:
-                    longitude = element.text
-            if methodCode == 1:
-                method = 'No method specified'
-            else:
-                method = 'Unknown method'
-
-            if QCcode == 0:
-                QClevel = "Raw Data"
-            elif QCcode == 1:
-                QClevel = "Quality Controlled Data"
-            elif QCcode == 2:
-                QClevel = "Derived Products"
-            elif QCcode == 3:
-                QClevel = "Interpreted Products"
-            elif QCcode == 4:
-                QClevel = "Knowledge Products"
-            else:
-                QClevel = 'Unknown'
-
 
             dates = []
             data = []
@@ -128,12 +98,10 @@ def parse_1_0_and_1_1(root):
                 time_str = dates[i]
                 values_str = data[i]
                 t= datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S')
-
-                if values_str == "-9999.0" or values_str == "-9999": #check to see if there are null values in the time series
+                if values_str == nodata: #check to see if there are null values in the time series
                     value_float = None
                 else:
                     value_float = float(values_str)
-
                 #item.append([t,value_float])
                 for_highchart.append([t,value_float])
 
@@ -150,18 +118,13 @@ def parse_1_0_and_1_1(root):
                     'end_date':largest_time,
                     'variable_name': variable_name,
                     'units': units,
-                    'values': values,
                     'for_graph': for_graph,
                     'wml_version': '1',
-                    'latitude': latitude,
-                    'longitude': longitude,
-                    'QClevel': QClevel,
-                    'method': method,
 		            'for_highchart':for_highchart}
         else:
             return "Parsing error: The waterml document doesn't appear to be a WaterML 1.0/1.1 time series"
-    #except:
-        #return "Parsing error: The Data in the Url, or in the request, was not correctly formatted for water ml 1."
+    except:
+        return "Parsing error: The Data in the Url, or in the request, was not correctly formatted for water ml 1."
 
 # Prepare for Chart Parameters
 def chartPara(ts_original,for_highcharts):
@@ -233,16 +196,17 @@ def parse_2_0(root):
                             for a in e.attrib:
                                 if 'title' in a:
                                     method=e.attrib[a]
+                if 'noDataValue'in element.tag:
+                    for e in element.iter():
+                        nodata = e.text
 
             for i in range(0,len(keys)):
                 time_str=keys[i]
                 time_obj=time_str_to_datetime(time_str)
-
-                if vals[i] == "-9999.0"or vals[i]=="-9999":
+                if vals[i] == nodata:
                     val_obj = None
                 else:
                     val_obj=float(vals[i])
-
                 item=[time_obj,val_obj]
                 for_highchart.append(item)
             values = dict(zip(keys, vals))
@@ -323,16 +287,12 @@ def Original_Checker(html):
     root = etree.XML(html)
     #root =  ET.fromstring(html1)
     wml_version = get_version(root)
+    print wml_version
+    print "dafsjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjk"
     if wml_version == '1':
         return parse_1_0_and_1_1(root)
     elif wml_version == '2.0':
         return parse_2_0(root)
-
-
-
-
-
-
 
 def file_unzipper(url_cuashi):
     #this function is for unzipping files

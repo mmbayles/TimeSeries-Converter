@@ -34,7 +34,7 @@ url_base='http://{0}.hydroshare.org/hsapi/resource/{1}/files/{2}'
 temp_dir = None
 
 def restcall(request,branch,res_id,filename):
-    print "restcall",branch,res_id,filename
+
     url_wml= url_base.format(branch,res_id,filename)
     response = urllib2.urlopen(url_wml)
     html = response.read()
@@ -117,21 +117,20 @@ def home(request):
         show_waterml = True
     if request.POST and 'show_input' in request.POST:
         show_input = True
-    print show_input
+
 
 
     if request.POST:
         Current_r = request.POST['select_r_script']
 
       #new code for zip_file
-    # print zip_bool
     if zip_bool == True:
         session = SessionMaker()
         urls1 = session.query(URL).all()
         session.close()
         #urls1 =[]
         if urls1 != []:
-            print 'data already loaded'
+            x=2
         else:
             temp_dir = tempfile.mkdtemp()
             for id in cuahsi_split:
@@ -140,7 +139,6 @@ def home(request):
                 try:
                     z = zipfile.ZipFile(StringIO.StringIO(r.content))
                     file_list = z.namelist()
-                    print file_list
                     try:
                         for  file in file_list:
                             joe1 = z.read(file)
@@ -149,9 +147,8 @@ def home(request):
                             file_temp.close()
                             zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
                             #zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
-                            response = urllib2.urlopen(zipped_url)
-                            html = response.read()
                             url2 = URL(url = zipped_url)
+                            print "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBb"
                             session = SessionMaker()
                             session.add(url2)
                             session.commit()
@@ -229,13 +226,14 @@ def home(request):
     session = SessionMaker()
     urls = session.query(URL).all()
     for url in urls:#creates a list of timeseries data and displays the results in the legend
+            print "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             url_list.append(url.url)
             response = urllib2.urlopen(url.url)
-            html = response.read()
+            #html = response.read()
             #graph_original = url.url
             #graph_original1 = ast.literal_eval(graph_original)#this displays the whole document
-            graph_original1 = Original_Checker(html)
-            legend.append(graph_original1['site_name'])
+            #graph_original1 = Original_Checker(html)
+            #legend.append(graph_original1['site_name'])
     session.close()
 
     if request.POST and "clear_all_ts" in request.POST:
@@ -250,14 +248,13 @@ def home(request):
         Current_r = request.POST['select_r_script']
 
     if len(url_list) ==0:
-        print "empty"
+        x=1
     else:
         for x in url_list:
             counter = counter +1#counter for testing
             #graphs the original time series
             response = urllib2.urlopen(x)
             html = response.read()
-
             graph_original = Original_Checker(html)
             number_ts.append({'name':graph_original['site_name'],'data':graph_original['for_highchart']})
         timeseries_plot = chartPara(graph_original,number_ts)#plots graph data
@@ -285,6 +282,7 @@ def home(request):
         display_r=[]
         session = SessionMaker1()
         script1 = session.query(rscript).all()
+        session.close()
         for script in script1:
             display_r.append(script.rscript)
         Current_r = display_r[0]
@@ -467,7 +465,6 @@ def run_wps(process_id,input,output):
     url_wps = 'http://appsdev.hydroshare.org:8282/wps/WebProcessingService'
 
     wps_request = urllib2.Request(url_wps,request)
-    print wps_request
     wps_open = urllib2.urlopen(wps_request)
     wps_read = wps_open.read()
 
@@ -508,6 +505,7 @@ def View_R():
     display_r =[]
     session = SessionMaker1()
     script1 = session.query(rscript).all()
+    session.close()
     for script in script1:
         display_r.append(script.rscript)
     if display_r[0] == "Time Series Converter":
