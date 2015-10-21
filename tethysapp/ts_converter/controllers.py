@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from utilities import *
+from tethys_sdk.gizmos import MessageBox
 from tethys_gizmos.gizmo_options import *
 from owslib.wps import WebProcessingService
 from owslib.wps import printInputOutput
@@ -94,43 +95,40 @@ def home(request):
     #test_cuashi = file_unzipper("https://ziptest.blob.core.windows.net/time-series/1396-utah-132-nephi-ut-84648-usa-2015-09-08-05-36-42-1881.zip")
     #chartPara(test_cuashi)
     global temp_dir
+    error_message = None #stores any errors with the app
+    show_input = False
 
-
-    #https://ziptest.blob.core.windows.net/time-series/1396-utah-132-nephi-ut-84648-usa-2015-09-08-05-36-42-1881.zip
-    #test
-    #example of possible launch string
-    #http://localhost:8000/apps/ts-converter/?input=775-missouri-215-morrisville-mo-65710-usa-2015-09-08-05-13-39-6651.zip&source=hydroshare
 
     if request.GET and 'res_id' in request.GET and 'src' in request.GET:
-        zip_string = ".zip"
         outside_input = True
-        #unfinished support for zipped files
-        if zip_string.find(request.GET['res_id']) != 0:
-            zip_bool = True
-            #url_zip = "http://localhost:8000/static/data_cart/waterml/"+request.GET['res_id']
-            url_zip = "http://appsdev.hydroshare.org/static/data_cart/waterml/"+request.GET['res_id']
-        if request.GET['src'] == "cuahsi":
-            show_cuahsi = True
-
-        elif request.GET['src'] == "hydroshare":
+        if request.GET['src'] == "hydroshare":
             show_hydroshare = True
+        elif request.GET['src']=='cuashi':
+            zip_string = "zip"
+            show_cuahsi =True
+            outside_input = True
+            #if zip_string.find(request.GET['cuahsi']) != 0:
+            zip_bool = True
+            #Make a dictionary to hold the ids passed by CUASHI
+            cuashi_data = request.GET['res_id']#retrieves ids from url
+            cuashi_data = cuashi_data[:-4]#trims the file type from ids
+            cuashi_split = cuashi_data.split(',')#splits ideas by commma
 
     if request.POST and 'hydroshare' in request.POST:
         show_hydroshare = True
     if request.POST and 'water_ml' in request.POST:
         show_waterml = True
+    if request.POST and 'show_input' in request.POST:
+        show_input = True
+    print show_input
+
 
     if request.POST:
         Current_r = request.POST['select_r_script']
 
-
-
       #new code for zip_file
     # print zip_bool
     if zip_bool == True:
-        r = requests.get(url_zip)
-        z = zipfile.ZipFile(StringIO.StringIO(r.content))
-        file_list = z.namelist()
         session = SessionMaker()
         urls1 = session.query(URL).all()
         session.close()
@@ -138,33 +136,40 @@ def home(request):
         if urls1 != []:
             print 'data already loaded'
         else:
-
-            try:
-                temp_dir = tempfile.mkdtemp()
-
-                for  file in file_list[1:]:
-                    joe1 = z.read(file)
-                    file_temp = tempfile.NamedTemporaryFile(delete = False, dir = temp_dir)
-                    file_temp.write(joe1)
-                    file_temp.close()
-                    #zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
-                    zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
-                    response = urllib2.urlopen(zipped_url)
-                    html = response.read()
-                    url2 = URL(url = zipped_url)
-                    session = SessionMaker()
-                    session.add(url2)
-                    session.commit()
-                    session.close()
-            except etree.XMLSyntaxError as e: #checks to see if data is an xml
-                print "Error:Not XML"
-                #quit("not valid xml")
-            except ValueError, e: #checks to see if Url is valid
-                print "Error:invalid Url"
-            except TypeError, e: #checks to see if xml is formatted correctly
-                print "Error:string indices must be integers not str"
-    # end code for zip_file
-
+            temp_dir = tempfile.mkdtemp()
+            for id in cuashi_split:
+                url_zip = "http://bcc-hiswebclient.azurewebsites.net/CUAHSI/HydroClient/WaterOneFlowArchive/"+id+'/zip'
+                r = requests.get(url_zip)
+                try:
+                    z = zipfile.ZipFile(StringIO.StringIO(r.content))
+                    file_list = z.namelist()
+                    print file_list
+                    try:
+                        for  file in file_list:
+                            joe1 = z.read(file)
+                            file_temp = tempfile.NamedTemporaryFile(delete = False, dir = temp_dir)
+                            file_temp.write(joe1)
+                            file_temp.close()
+                            zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
+                            zipped_url
+                            #zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
+                            response = urllib2.urlopen(zipped_url)
+                            html = response.read()
+                            url2 = URL(url = zipped_url)
+                            session = SessionMaker()
+                            session.add(url2)
+                            session.commit()
+                            session.close()
+                    except etree.XMLSyntaxError as e: #checks to see if data is an xml
+                        print "Error:Not XML"
+                        #quit("not valid xml")
+                    except ValueError, e: #checks to see if Url is valid
+                        print "Error:invalid Url"
+                    except TypeError, e: #checks to see if xml is formatted correctly
+                        print "Error:string indices must be integers not str"
+                except  zipfile.BadZipfile as e:
+                        error_message = "Bad Zip File"
+                        print "Bad Zip file"
 
     # this block of code will add a time series to the legend and graph the result
     if (request.POST and "add_ts" in request.POST):
@@ -335,7 +340,10 @@ def home(request):
                 legend.append(graph_original['site_name']+' Convertered')
             timeseries_plot = chartPara(graph_original,number_ts)#plots graph data
 
-
+    if error_message!= None:
+        error_bool = "True"
+    else:
+        error_bool = "False"
     text_input_options = TextInput(display_text='Enter URL of Water ML data and click "Add a Time Series"',
                                    name='url_name',
                                     )
@@ -366,6 +374,9 @@ def home(request):
     water_ml = Button(display_text ="Upload water ml url",
                         name ='water_ml',
                         submit = True)
+    show_input1 = Button(display_text ="Manual Input",
+                        name ='show_input1',
+                        submit = True)
     add_ts = Button(display_text='Add a Time Series',
                        name='add_ts',
                        submit=True)
@@ -387,6 +398,21 @@ def home(request):
     upload_hs = Button(display_text='Upload data to HydroShare',
                        name='upload_hs',
                        submit=True)
+    message_error =MessageBox(name = 'message_error',
+                              title = 'Error',
+                              message = error_message,
+                              dismiss_button = 'Cancel',
+                              affirmative_button = "OK",
+                              width = 400,
+                              affirmative_attributes = 'href=javascript:void(0);')
+    sampleModal = MessageBox(name='sampleModal',
+                         title='Message Box Title',
+                         message='Congratulations! This is a message box.',
+                         dismiss_button='Nevermind',
+                         affirmative_button='Proceed',
+                         width=400,
+                         affirmative_attributes='href=javascript:void(0);')
+
     context = {
 'timeseries_plot':timeseries_plot,
 'text_input_options':text_input_options,
@@ -412,7 +438,13 @@ def home(request):
 'hydroshare_resource':hydroshare_resource,
 'water_ml':water_ml,
 'show_waterml':show_waterml,
-'upload_hs':upload_hs
+'upload_hs':upload_hs,
+'message_error':message_error,
+'error_bool':error_bool,
+'error_message':error_message,
+'sampleModal':sampleModal,
+'show_input':show_input,
+'show_input1':show_input
 }
 
 

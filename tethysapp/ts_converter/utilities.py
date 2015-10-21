@@ -63,14 +63,11 @@ def time_to_int(t):
 
 
 def parse_1_0_and_1_1(root):
-    try:
-        if 'timeSeriesResponse' in root.tag or 'timeSeries' in root.tag:
-            time_series = root[1]
-            ts = etree.tostring(time_series)
+    #try:
+        if 'timeSeriesResponse' in root.tag or 'timeSeries' in root.tag or "soap:Envelope":
             values = OrderedDict()
             for_graph = []
             for_highchart = []
-
             units, site_name, variable_name, latitude, longitude, methodCode, method, QCcode, QClevel = None, None, None, None, None, None, None, None, None
             unit_is_set = False
             methodCode_set = False
@@ -147,7 +144,7 @@ def parse_1_0_and_1_1(root):
                     smallest_time = t
                 if t>largest_time:
                     largest_time = t
-            return {'time_series': ts,
+            return {
                     'site_name': site_name,
                     'start_date': smallest_time,
                     'end_date':largest_time,
@@ -163,8 +160,8 @@ def parse_1_0_and_1_1(root):
 		            'for_highchart':for_highchart}
         else:
             return "Parsing error: The waterml document doesn't appear to be a WaterML 1.0/1.1 time series"
-    except:
-        return "Parsing error: The Data in the Url, or in the request, was not correctly formatted."
+    #except:
+        #return "Parsing error: The Data in the Url, or in the request, was not correctly formatted for water ml 1."
 
 # Prepare for Chart Parameters
 def chartPara(ts_original,for_highcharts):
