@@ -148,7 +148,6 @@ def home(request):
                             zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
                             #zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
                             url2 = URL(url = zipped_url)
-                            print "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBb"
                             session = SessionMaker()
                             session.add(url2)
                             session.commit()
@@ -226,14 +225,13 @@ def home(request):
     session = SessionMaker()
     urls = session.query(URL).all()
     for url in urls:#creates a list of timeseries data and displays the results in the legend
-            print "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             url_list.append(url.url)
             response = urllib2.urlopen(url.url)
-            #html = response.read()
+            html = response.read()
             #graph_original = url.url
             #graph_original1 = ast.literal_eval(graph_original)#this displays the whole document
-            #graph_original1 = Original_Checker(html)
-            #legend.append(graph_original1['site_name'])
+            graph_original1 = Original_Checker(html)
+            legend.append(graph_original1['site_name'])
     session.close()
 
     if request.POST and "clear_all_ts" in request.POST:
