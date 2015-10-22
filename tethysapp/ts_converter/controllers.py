@@ -125,6 +125,7 @@ def home(request):
 
       #new code for zip_file
     if zip_bool == True:
+
         session = SessionMaker()
         urls1 = session.query(URL).all()
         session.close()
@@ -139,14 +140,28 @@ def home(request):
                 try:
                     z = zipfile.ZipFile(StringIO.StringIO(r.content))
                     file_list = z.namelist()
+
+                    print 'print absolute URL!'
+                    my_url = request.build_absolute_uri()
+                    print my_url
+
                     try:
                         for  file in file_list:
                             joe1 = z.read(file)
                             file_temp = tempfile.NamedTemporaryFile(delete = False, dir = temp_dir)
                             file_temp.write(joe1)
                             file_temp.close()
+
                             #zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
-                            zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
+                            #zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
+
+                            #getting the URL of the zip file
+                            base_url = request.build_absolute_uri()
+                            if "?" in base_url:
+                                base_url = base_url.split("?")[0]
+
+                            zipped_url = base_url + "temp_waterml" + file_temp.name[4:]
+
                             url2 = URL(url = zipped_url)
                             session = SessionMaker()
                             session.add(url2)
@@ -228,8 +243,9 @@ def home(request):
             url_list.append(url.url)
             response = urllib2.urlopen(url.url)
             html = response.read()
-            #graph_original = url.url
+
             #graph_original1 = ast.literal_eval(graph_original)#this displays the whole document
+
             graph_original1 = Original_Checker(html)
             legend.append(graph_original1['site_name'])
     session.close()
@@ -254,7 +270,9 @@ def home(request):
             response = urllib2.urlopen(x)
             html = response.read()
             graph_original = Original_Checker(html)
+
             number_ts.append({'name':graph_original['site_name'],'data':graph_original['for_highchart']})
+
         timeseries_plot = chartPara(graph_original,number_ts)#plots graph data
 
     if request.POST and "select_r" in request.POST:

@@ -1,5 +1,5 @@
 import os
-from tethys_apps.base.persistent_store import get_persistent_store_engine as gpse
+#from tethys_apps.base.persistent_store import get_persistent_store_engine as gpse
 import urllib2
 from lxml import etree
 from datetime import datetime
@@ -15,17 +15,9 @@ import requests
 from tethys_sdk.gizmos import TimeSeries
 import xml.etree.ElementTree as ET
 
+import time
 
 
-def get_persistent_store_engine(persistent_store_name):
-    """
-    Returns an SQLAlchemy engine object for the persistent store name provided.
-    """
-    # Derive app name
-    app_name = os.path.split(os.path.dirname(__file__))[1]
-
-    # Get engine
-    return gpse(app_name, persistent_store_name)
 
 def get_version(root):
     wml_version = None
@@ -63,59 +55,94 @@ def time_to_int(t):
 
 
 def parse_1_0_and_1_1(root):
+
     try:
         if 'timeSeriesResponse' in root.tag or 'timeSeries' in root.tag or "soap:Envelope":
-            values = OrderedDict()
+
+            # lists to store the time-series data
             for_graph = []
             for_highchart = []
-            units, site_name, variable_name, latitude, longitude, methodCode, method, QCcode, QClevel = None, None, None, None, None, None, None, None, None
+            my_times = []
+            my_values = []
+
+            t0 = time.time()
+
+            # metadata items
+            units, site_name, variable_name = None, None, None
             unit_is_set = False
+
+            # iterate through xml document and read all values
             for element in root.iter():
                 brack_lock = -1
                 if '}' in element.tag:
                     brack_lock = element.tag.index('}')  #The namespace in the tag is enclosed in {}.
-                tag = element.tag[brack_lock+1:]     #Takes only actual tag, no namespace
-                if 'unitName' == tag:  # in the xml there is a unit for the value, then for time. just take the first
-                    if not unit_is_set:
-                        units = element.text
-                        unit_is_set = True
+                    tag = element.tag[brack_lock+1:]     #Takes only actual tag, no namespace
+
                 if 'value' == tag:
-                    values[element.attrib['dateTime']] = element.text
-                if 'noDataValue'==tag:
-                    nodata = element.text
-                if 'siteName' == tag:
-                    site_name = element.text
-                if 'variableName' == tag:
-                    variable_name = element.text
-
-            dates = []
-            data = []
-            item = []
-            for k, v in values.items():
-                dates = values.keys()
-                data = values.values()
-            for i in range(0,len(dates)):
-                time_str = dates[i]
-                values_str = data[i]
-                t= datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S')
-                if values_str == nodata: #check to see if there are null values in the time series
-                    value_float = None
+                    my_times.append(element.attrib['dateTime'])
+                    my_values.append(element.text)
                 else:
-                    value_float = float(values_str)
-                #item.append([t,value_float])
-                for_highchart.append([t,value_float])
+                    if 'unitName' == tag:  # in the xml there is a unit for the value, then for time. just take the first
+                        if not unit_is_set:
+                            units = element.text
+                            unit_is_set = True
 
-            smallest_time = list(values.keys())[0]
-            largest_time =  list(values.keys())[0]
-            for t in list(values.keys()):
-                if t < smallest_time:
-                    smallest_time = t
-                if t>largest_time:
-                    largest_time = t
+                    if 'noDataValue' == tag:
+                        nodata = element.text
+                    if 'siteName' == tag:
+                        site_name = element.text
+                    if 'variableName' == tag:
+                        variable_name = element.text
+
+            print "root.iter time: " + str(time.time() - t0)
+
+            t0 = time.time()
+
+            for i in range(0, len(my_times)):
+                t= datetime.strptime(my_times[i], '%Y-%m-%dT%H:%M:%S')
+
+                #check to see if there are null values in the time series
+                if my_values[i] == nodata:
+                    for_highchart.append([t, None])
+                else:
+                    for_highchart.append([t, float(my_values[i])])
+
+            smallest_time = for_highchart[0][0]
+            largest_time = for_highchart[len(for_highchart) - 1][0]
+
+            print "convert time time: " + str(time.time() - t0)
+
+            #print request.get_host()
+
+            #dates = []
+            #data = []
+            #item = []
+            #for k, v in values.items():
+            #    dates = values.keys()
+            #    data = values.values()
+            #for i in range(0,len(dates)):
+            #    time_str = dates[i]
+            #    values_str = data[i]
+            #    t= datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S')
+            #    if values_str == nodata: #check to see if there are null values in the time series
+            #        value_float = None
+            #    else:
+            #        value_float = float(values_str)
+            #    #item.append([t,value_float])
+            #    for_highchart.append([t,value_float])
+
+            #smallest_time = list(values.keys())[0]
+            #largest_time =  list(values.keys())[0]
+            #for t in list(values.keys()):
+            #    if t < smallest_time:
+            #        smallest_time = t
+            #    if t>largest_time:
+            #        largest_time = t
+
             return {
                     'site_name': site_name,
-                    'start_date': smallest_time,
-                    'end_date':largest_time,
+                    'start_date': str(smallest_time),
+                    'end_date':str(largest_time),
                     'variable_name': variable_name,
                     'units': units,
                     'for_graph': for_graph,
@@ -123,13 +150,14 @@ def parse_1_0_and_1_1(root):
 		            'for_highchart':for_highchart}
         else:
             return "Parsing error: The waterml document doesn't appear to be a WaterML 1.0/1.1 time series"
-    except:
+    except Exception, e:
+        print e
         return "Parsing error: The Data in the Url, or in the request, was not correctly formatted for water ml 1."
 
 # Prepare for Chart Parameters
 def chartPara(ts_original,for_highcharts):
 
-    title_text= ts_original ['site_name']+" "+ts_original['start_date']+" - "+ts_original['end_date']
+    title_text= ts_original ['site_name']+" "+ ts_original['start_date'] +" - "+ts_original['end_date']
     x_title_text = "Time Period"
     y_title_text = ts_original['units']
     # Timeseries plot example
@@ -282,17 +310,15 @@ def TimeSeriesConverter(string_data):
                 'for_highchart':for_highchart,
            }
 
+
 def Original_Checker(html):
-    #html1 = str(html)
     root = etree.XML(html)
-    #root =  ET.fromstring(html1)
     wml_version = get_version(root)
-    print wml_version
-    print "dafsjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjk"
     if wml_version == '1':
         return parse_1_0_and_1_1(root)
     elif wml_version == '2.0':
         return parse_2_0(root)
+
 
 def file_unzipper(url_cuashi):
     #this function is for unzipping files
@@ -311,12 +337,9 @@ def file_unzipper(url_cuashi):
     r = requests.get(url_cuashi)
     z = zipfile.ZipFile(StringIO.StringIO(r.content))
 
-
     file_list = z.namelist()
     for  file in file_list:
         joe = z.read(file)
-        #print joe
-    #print file_list
 
     return file_list
 
