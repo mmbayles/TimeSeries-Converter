@@ -141,12 +141,8 @@ def home(request):
                     z = zipfile.ZipFile(StringIO.StringIO(r.content))
                     file_list = z.namelist()
 
-                    print 'print absolute URL!'
-                    my_url = request.build_absolute_uri()
-                    print my_url
-
                     try:
-                        for  file in file_list:
+                        for file in file_list:
                             joe1 = z.read(file)
                             file_temp = tempfile.NamedTemporaryFile(delete = False, dir = temp_dir)
                             file_temp.write(joe1)
@@ -161,12 +157,14 @@ def home(request):
                                 base_url = base_url.split("?")[0]
 
                             zipped_url = base_url + "temp_waterml" + file_temp.name[4:]
+                            print zipped_url
 
                             url2 = URL(url = zipped_url)
                             session = SessionMaker()
                             session.add(url2)
                             session.commit()
                             session.close()
+                            print "WaterML file unzipped successfully."
                     except etree.XMLSyntaxError as e: #checks to see if data is an xml
                         print "Error:Not XML"
                         #quit("not valid xml")

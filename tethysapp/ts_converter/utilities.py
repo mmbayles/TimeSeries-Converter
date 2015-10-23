@@ -55,9 +55,11 @@ def time_to_int(t):
 
 
 def parse_1_0_and_1_1(root):
-
+    print "running parse_1_0_and_1_1"
+    root_tag = root.tag.lower()
+    print "root tag: " + root_tag
     try:
-        if 'timeSeriesResponse' in root.tag or 'timeSeries' in root.tag or "soap:Envelope":
+        if 'timeseriesresponse' in root_tag or 'timeseries' in root_tag or "envelope" in root_tag:
 
             # lists to store the time-series data
             for_graph = []
@@ -149,6 +151,7 @@ def parse_1_0_and_1_1(root):
                     'wml_version': '1',
 		            'for_highchart':for_highchart}
         else:
+            print "Parsing error: The waterml document doesn't appear to be a WaterML 1.0/1.1 time series"
             return "Parsing error: The waterml document doesn't appear to be a WaterML 1.0/1.1 time series"
     except Exception, e:
         print e
@@ -312,6 +315,7 @@ def TimeSeriesConverter(string_data):
 
 
 def Original_Checker(html):
+    print "running Original_Checker"
     root = etree.XML(html)
     wml_version = get_version(root)
     if wml_version == '1':
