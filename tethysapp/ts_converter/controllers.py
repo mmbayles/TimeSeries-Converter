@@ -65,6 +65,7 @@ def delete_file(request):
     shutil.rmtree(temp_dir)#deletes the temp files associated with the zip file
 
 def home(request):
+    original_checker_time = 0
     url_wml=None
     name = None
     show_time = False
@@ -218,7 +219,11 @@ def home(request):
 
                 # zip file name
                 html = response.read()
+
+                t0 = time.time()
                 graph_original = Original_Checker(html)
+                original_checker_time = time.time() - t0
+
                 url_data_validation.append(graph_original['site_name'])
 
                 session = SessionMaker()
@@ -244,7 +249,10 @@ def home(request):
 
             #graph_original1 = ast.literal_eval(graph_original)#this displays the whole document
 
+            t0 = time.time()
             graph_original1 = Original_Checker(html)
+            original_checker_time = time.time() - t0
+
             legend.append(graph_original1['site_name'])
     session.close()
 
@@ -267,7 +275,10 @@ def home(request):
             #graphs the original time series
             response = urllib2.urlopen(x)
             html = response.read()
+
+            t0 = time.time()
             graph_original = Original_Checker(html)
+            original_checker_time = t0 - time.time()
 
             number_ts.append({'name':graph_original['site_name'],'data':graph_original['for_highchart']})
 
@@ -452,7 +463,8 @@ def home(request):
 'error_message':error_message,
 'sampleModal':sampleModal,
 'show_input':show_input,
-'show_input1':show_input
+'show_input1':show_input,
+'original_checker_time': "original_checker_time=" + str(original_checker_time)
 }
 
 
