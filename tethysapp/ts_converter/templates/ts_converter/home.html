@@ -6,12 +6,7 @@
 <form method="post">
 
     {% csrf_token %}
-    <h1>Legend</h1>
-    {%for ts in legend%}
-    <ul>
-        <li>{{ts}}</li>
-    </ul>
-    {%endfor%}
+
 
 
     <p></p>
@@ -20,8 +15,13 @@
 
     {% gizmo select_input select_r_script %}
     {% gizmo button select_r %}
+
+
+
+
     <a href="#message_error" role="button" class="btn btn-success hidden"   data-toggle="modal">Error Report/a>
         <a href="{% url 'ts_converter:View_R_Code' %} " class = "btn btn-default">View R Code</a>
+        {% gizmo button clear_all_ts %}
         {% endblock %}
 
         {% block app_content %}
@@ -32,17 +32,22 @@
         {%gizmo message_box sampleModal%}
 
         <h1>Welcome to HydroScriptR</h1>
-        {%gizmo button water_ml%}{%gizmo button hydroshare%}
+        <!--{%gizmo button water_ml%}{%gizmo button hydroshare%}
         <p></p>
+
         {%if show_hydroshare = True%}
         {% gizmo text_input hydroshare_resource %}
         {% gizmo text_input hydroshare_file %}
         {%endif%}
         {%if show_waterml = True%}
         {% gizmo text_input text_input_options %}
+        <a href="{{update_url}}" class = "btn btn-default">adding a time series</a>
         {%endif%}
 
-        {% gizmo button add_ts %}{% gizmo button clear_all_ts %}
+        {% gizmo button add_ts %}-->
+
+
+
         {% gizmo plot_view timeseries_plot%}
 
             {%if download_bool%}

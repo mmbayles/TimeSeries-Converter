@@ -1,4 +1,4 @@
-window.onbeforeunload = function() {
+window.onunload = function() {
     $.ajax({
         url: 'delete-file'
     });

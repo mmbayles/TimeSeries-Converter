@@ -12,6 +12,7 @@ import shutil
 #from tethys_apps.sdk import list_wps_service_engines
 import xml.etree.ElementTree as ET
 import sys
+import unittest
 import requests
 import tempfile
 import csv
@@ -24,8 +25,10 @@ import ast
 import zipfile
 import StringIO
 
+import random
 import urllib
 import json
+import webbrowser
 # -- coding: utf-8--
 
 #Base_Url_HydroShare REST API
@@ -91,11 +94,16 @@ def home(request):
     filename_zip = None
     url_zip =None
     zip_bool = False #checks if file is zipped
-
     global temp_dir
     error_message = None #stores any errors with the app
     show_input = False
+    update_url = None
+    cuahsi_split = None
 
+    user_id = request.user.username
+
+    if user_id == None:
+        user_id = random.random()
 
     if request.GET and 'res_id' in request.GET and 'src' in request.GET:
         outside_input = True
@@ -110,7 +118,6 @@ def home(request):
             #Make a dictionary to hold the ids passed by CUAHSI
             cuahsi_data = request.GET['res_id']#retrieves ids from url
             cuahsi_split = cuahsi_data.split(',')#splits ideas by commma
-
     if request.POST and 'hydroshare' in request.POST:
         show_hydroshare = True
     if request.POST and 'water_ml' in request.POST:
@@ -118,14 +125,10 @@ def home(request):
     if request.POST and 'show_input' in request.POST:
         show_input = True
 
-
-
     if request.POST:
         Current_r = request.POST['select_r_script']
-
       #new code for zip_file
     if zip_bool == True:
-
         session = SessionMaker()
         urls1 = session.query(URL).all()
         session.close()
@@ -133,7 +136,10 @@ def home(request):
         if urls1 != []:
             x=2
         else:
-            temp_dir = tempfile.mkdtemp()
+            base_temp_dir = tempfile.tempdir
+            temp_dir = os.path.join(base_temp_dir, "cuahsi")
+            if not os.path.exists(temp_dir):
+                os.makedirs(temp_dir)
             for id in cuahsi_split:
                 url_zip = "http://bcc-hiswebclient.azurewebsites.net/CUAHSI/HydroClient/WaterOneFlowArchive/"+id+'/zip'
                 r = requests.get(url_zip)
@@ -144,27 +150,23 @@ def home(request):
                     try:
                         for file in file_list:
                             joe1 = z.read(file)
-                            file_temp = tempfile.NamedTemporaryFile(delete = False, dir = temp_dir)
+                            #file_temp = tempfile.NamedTemporaryFile(delete = False, dir = temp_dir)
+                            file_temp = open(temp_dir + "/" + id + ".xml", 'wb')
                             file_temp.write(joe1)
                             file_temp.close()
-
-                            #zipped_url = "http://localhost:8000/apps/ts-converter/temp_waterml"+file_temp.name[4:]
-                            #zipped_url = "http://appsdev.hydroshare.org/apps/ts-converter/temp_waterml"+file_temp.name[4:]
-
                             #getting the URL of the zip file
                             base_url = request.build_absolute_uri()
                             if "?" in base_url:
                                 base_url = base_url.split("?")[0]
 
                             zipped_url = base_url + "temp_waterml" + file_temp.name[4:]
-                            print zipped_url
+                            #url2 = URL(url = zipped_url)
+                            # session = SessionMaker()
+                            # session.add(url2)
+                            # session.commit()
+                            # session.close()
 
-                            url2 = URL(url = zipped_url)
-                            session = SessionMaker()
-                            session.add(url2)
-                            session.commit()
-                            session.close()
-                            print "WaterML file unzipped successfully."
+
                     except etree.XMLSyntaxError as e: #checks to see if data is an xml
                         print "Error:Not XML"
                         #quit("not valid xml")
@@ -174,10 +176,11 @@ def home(request):
                         print "Error:string indices must be integers not str"
                 except  zipfile.BadZipfile as e:
                         error_message = "Bad Zip File"
-                        print "Bad Zip file"
+                        print "Bad Zip file"+ id
 
     # this block of code will add a time series to the legend and graph the result
     if (request.POST and "add_ts" in request.POST):
+
         if not outside_input:
             Current_r = request.POST['select_r_script']
 
@@ -211,20 +214,21 @@ def home(request):
         if request.POST.get('url_name') != None:
             try:
 
-                request.POST.get('url_name') != ''
+                update_url = request.build_absolute_uri()+'?id='+request.POST.get('url_name')
 
-                response = urllib2.urlopen(request.POST['url_name'])
-                url1 = URL(url = request.POST['url_name'])
+                print update_url
+
+                #webbrowser.open(update_url,new=0)
 
                 # zip file name
-                html = response.read()
-                graph_original = Original_Checker(html)
-                url_data_validation.append(graph_original['site_name'])
+                # html = response.read()
+                # graph_original = Original_Checker(html)
+                # url_data_validation.append(graph_original['site_name'])
 
-                session = SessionMaker()
-                session.add(url1)
-                session.commit()
-                session.close()
+                # session = SessionMaker()
+                # session.add(url1)
+                # session.commit()
+                # session.close()
             except etree.XMLSyntaxError as e: #checks to see if data is an xml
                 print "Error:Not XML"
                 #quit("not valid xml")
@@ -235,18 +239,40 @@ def home(request):
 
 
 
-    session = SessionMaker()
-    urls = session.query(URL).all()
-    for url in urls:#creates a list of timeseries data and displays the results in the legend
-            url_list.append(url.url)
-            response = urllib2.urlopen(url.url)
+    # session = SessionMaker()
+    # urls = session.query(URL).all()
+    # if cuahsi_split != None:
+    #     for id in cuahsi_split:#creates a list of timeseries data and displays the results in the legend
+    #             #look in temp dir for folder cuahsi and look for data
+    #             base_url = request.build_absolute_uri()
+    #             if "?" in base_url:
+    #                 base_url = base_url.split("?")[0]
+    #             zipped_url = base_url + "temp_waterml/cuahsi/" +id +'.xml'
+    #             response = urllib2.urlopen(zipped_url)
+    #             html = response.read()
+    #             #url_list.append(url.url)
+    #             # response = urllib2.urlopen(url.url)
+    #             # html = response.read()
+    #             #graph_original1 = ast.literal_eval(graph_original)#this displays the whole document
+    #             graph_original1 = Original_Checker(html)
+    #             legend.append(graph_original1['site_name'])
+    #     # session.close()
+
+    if cuahsi_split != None and "clear_all_ts" not in request.POST and error_message == None:
+        for id in cuahsi_split:
+            counter = counter +1#counter for testing
+            #graphs the original time series
+            base_url = request.build_absolute_uri()
+            if "?" in base_url:
+                base_url = base_url.split("?")[0]
+            zipped_url = base_url + "temp_waterml/cuahsi/" +id +'.xml'
+            response = urllib2.urlopen(zipped_url)
             html = response.read()
-
-            #graph_original1 = ast.literal_eval(graph_original)#this displays the whole document
-
-            graph_original1 = Original_Checker(html)
-            legend.append(graph_original1['site_name'])
-    session.close()
+            graph_original = Original_Checker(html)
+            legend.append(graph_original['site_name'])
+            number_ts.append({'name':graph_original['site_name'],'data':graph_original['for_highchart']})
+        timeseries_plot = chartPara(graph_original,number_ts)#plots graph data
+        print 'graph'
 
     if request.POST and "clear_all_ts" in request.POST:
         session = SessionMaker()
@@ -258,20 +284,7 @@ def home(request):
         legend = None
         url_list =[]
         Current_r = request.POST['select_r_script']
-
-    if len(url_list) ==0:
-        x=1
-    else:
-        for x in url_list:
-            counter = counter +1#counter for testing
-            #graphs the original time series
-            response = urllib2.urlopen(x)
-            html = response.read()
-            graph_original = Original_Checker(html)
-
-            number_ts.append({'name':graph_original['site_name'],'data':graph_original['for_highchart']})
-
-        timeseries_plot = chartPara(graph_original,number_ts)#plots graph data
+        print 'clear'
 
     if request.POST and "select_r" in request.POST:
         session = SessionMaker1()
@@ -348,6 +361,8 @@ def home(request):
                 legend.append(graph_original['site_name']+' Convertered')
             timeseries_plot = chartPara(graph_original,number_ts)#plots graph data
 
+    print update_url
+    print "Urllllllllllllllllllllllllllllllllllllllllllllllllllllll"
     if error_message!= None:
         error_bool = "True"
     else:
@@ -452,7 +467,8 @@ def home(request):
 'error_message':error_message,
 'sampleModal':sampleModal,
 'show_input':show_input,
-'show_input1':show_input
+'show_input1':show_input,
+'update_url':update_url
 }
 
 

@@ -66,20 +66,16 @@ def parse_1_0_and_1_1(root):
             for_highchart = []
             my_times = []
             my_values = []
-
             t0 = time.time()
-
             # metadata items
             units, site_name, variable_name = None, None, None
             unit_is_set = False
-
             # iterate through xml document and read all values
             for element in root.iter():
                 brack_lock = -1
                 if '}' in element.tag:
                     brack_lock = element.tag.index('}')  #The namespace in the tag is enclosed in {}.
                     tag = element.tag[brack_lock+1:]     #Takes only actual tag, no namespace
-
                 if 'value' == tag:
                     my_times.append(element.attrib['dateTime'])
                     my_values.append(element.text)
@@ -96,7 +92,6 @@ def parse_1_0_and_1_1(root):
                     if 'variableName' == tag:
                         variable_name = element.text
 
-            print "root.iter time: " + str(time.time() - t0)
 
             t0 = time.time()
 
@@ -111,8 +106,6 @@ def parse_1_0_and_1_1(root):
 
             smallest_time = for_highchart[0][0]
             largest_time = for_highchart[len(for_highchart) - 1][0]
-
-            print "convert time time: " + str(time.time() - t0)
 
             #print request.get_host()
 
@@ -315,7 +308,6 @@ def TimeSeriesConverter(string_data):
 
 
 def Original_Checker(html):
-    print "running Original_Checker"
     root = etree.XML(html)
     wml_version = get_version(root)
     if wml_version == '1':
