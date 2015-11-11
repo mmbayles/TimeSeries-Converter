@@ -1,4 +1,4 @@
-window.onunload = function() {
+window.error = function() {
     $.ajax({
         url: 'delete-file'
     });

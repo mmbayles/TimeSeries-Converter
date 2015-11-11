@@ -70,6 +70,7 @@ def parse_1_0_and_1_1(root):
             # metadata items
             units, site_name, variable_name = None, None, None
             unit_is_set = False
+            data_type = None
             # iterate through xml document and read all values
             for element in root.iter():
                 brack_lock = -1
@@ -79,20 +80,22 @@ def parse_1_0_and_1_1(root):
                 if 'value' == tag:
                     my_times.append(element.attrib['dateTime'])
                     my_values.append(element.text)
-                else:
-                    if 'unitName' == tag:  # in the xml there is a unit for the value, then for time. just take the first
-                        if not unit_is_set:
-                            units = element.text
-                            unit_is_set = True
+                if 'unitName' == tag:  # in the xml there is a unit for the value, then for time. just take the first
+                    if not unit_is_set:
+                        units = element.text
+                        unit_is_set = True
 
-                    if 'noDataValue' == tag:
-                        nodata = element.text
-                    if 'siteName' == tag:
-                        site_name = element.text
-                    if 'variableName' == tag:
-                        variable_name = element.text
+                if 'noDataValue' == tag:
+                    nodata = element.text
+                if 'siteName' == tag:
+                    site_name = element.text
+                if 'variableName' == tag:
+                    variable_name = element.text
+                if 'dataType' == tag:
+                    data_type = element.text
 
-
+                print data_type
+                print"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaaaa"
             t0 = time.time()
 
             for i in range(0, len(my_times)):
@@ -136,6 +139,8 @@ def parse_1_0_and_1_1(root):
 
             return {
                     'site_name': site_name,
+                    'nodata':nodata,
+                    'data_type':data_type,
                     'start_date': str(smallest_time),
                     'end_date':str(largest_time),
                     'variable_name': variable_name,
@@ -151,7 +156,7 @@ def parse_1_0_and_1_1(root):
         return "Parsing error: The Data in the Url, or in the request, was not correctly formatted for water ml 1."
 
 # Prepare for Chart Parameters
-def chartPara(ts_original,for_highcharts):
+def chartPara(ts_original,for_highcharts,unit_types):
 
     title_text= ts_original ['site_name']+" "+ ts_original['start_date'] +" - "+ts_original['end_date']
     x_title_text = "Time Period"
@@ -163,8 +168,16 @@ def chartPara(ts_original,for_highcharts):
     width='500px',
     engine='highcharts',
     title= ts_original ['site_name']+" "+ts_original['start_date']+" - "+ts_original['end_date'],
-    y_axis_title='Snow depth',
-    y_axis_units='m',
+
+
+
+
+
+    #y_axis_title=ts_original['variable_name'],
+    y_axis_units= unit_types,
+
+
+
     show_legend = False,
     legend={
             'layout': 'horizontal',
@@ -223,6 +236,8 @@ def parse_2_0(root):
                 if 'noDataValue'in element.tag:
                     for e in element.iter():
                         nodata = e.text
+                if 'DataType' in element.tag:
+                        data_type = e.text
 
             for i in range(0,len(keys)):
                 time_str=keys[i]
@@ -253,6 +268,7 @@ def parse_2_0(root):
                     'variable_name': variable_name,
                     'units': units,
                     'values': values,
+                    'data_type':data_type,
                     'for_graph': for_graph,
                     'wml_version': '2.0',
                     'latitude': latitude,

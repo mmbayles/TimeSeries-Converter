@@ -65,7 +65,7 @@ def delete_file(request):
         session.delete(url)
         session.commit()
     session.close()
-    shutil.rmtree(temp_dir)#deletes the temp files associated with the zip file
+    # shutil.rmtree(temp_dir)#deletes the temp files associated with the zip file
 
 def home(request):
     url_wml=None
@@ -99,6 +99,8 @@ def home(request):
     show_input = False
     update_url = None
     cuahsi_split = None
+    zipped_url =[]
+    unit_types =[]
 
     user_id = request.user.username
 
@@ -159,7 +161,7 @@ def home(request):
                             if "?" in base_url:
                                 base_url = base_url.split("?")[0]
 
-                            zipped_url = base_url + "temp_waterml" + file_temp.name[4:]
+                            zipped_url.append(base_url + "temp_waterml" + file_temp.name[4:])
                             #url2 = URL(url = zipped_url)
                             # session = SessionMaker()
                             # session.add(url2)
@@ -265,13 +267,17 @@ def home(request):
             base_url = request.build_absolute_uri()
             if "?" in base_url:
                 base_url = base_url.split("?")[0]
-            zipped_url = base_url + "temp_waterml/cuahsi/" +id +'.xml'
-            response = urllib2.urlopen(zipped_url)
+            zipped_url1 = base_url + "temp_waterml/cuahsi/" +id +'.xml'
+            response = urllib2.urlopen(zipped_url1)
             html = response.read()
             graph_original = Original_Checker(html)
             legend.append(graph_original['site_name'])
-            number_ts.append({'name':graph_original['site_name'],'data':graph_original['for_highchart']})
-        timeseries_plot = chartPara(graph_original,number_ts)#plots graph data
+            units_space = ' '+graph_original['units']
+            tooltip_units = {'valueSuffix': units_space}
+            graph_type = 'spline'
+            number_ts.append({'name':graph_original['site_name']+" "+graph_original['data_type'],'data':graph_original['for_highchart'],'tooltip':tooltip_units,'type':graph_type})
+            unit_types.append(graph_original['units'])
+        timeseries_plot = chartPara(graph_original,number_ts,unit_types)#plots graph data
         print 'graph'
 
     if request.POST and "clear_all_ts" in request.POST:
@@ -325,16 +331,19 @@ def home(request):
             timeseries_plot = chartPara(graph_info,number_ts1)
         # Plotting the altered time series
         else:
-            for x in url_list:
+            for x in zipped_url:
+                print x
                 counter = counter +1#counter for testing
                 #graphs the original time series
                 response = urllib2.urlopen(x)
                 html = response.read()
                 graph_original = Original_Checker(html)
+                url_user = str(graph_original['for_highchart'])
+                #url_user = '[[datetime.datetime(2015, 3, 16, 12, 0), 0.4687637], [datetime.datetime(2015, 4, 16, 0, 0), 1.2060138], [datetime.datetime(2015, 5, 16, 12, 0), 2.3565671], [datetime.datetime(2015, 6, 16, 0, 0), 2.8779197], [datetime.datetime(2015, 7, 16, 12, 0), 0.97303045], [datetime.datetime(2015, 8, 16, 12, 0), 0.5432831], [datetime.datetime(2015, 9, 16, 0, 0), 1.811853], [datetime.datetime(2015, 10, 16, 12, 0), 2.2585738], [datetime.datetime(2014, 11, 16, 0, 0), 0.29075155], [datetime.datetime(2014, 12, 16, 12, 0), 0.10494206], [datetime.datetime(2015, 1, 16, 12, 0), 0.07379243], [datetime.datetime(2015, 2, 15, 0, 0), 0.05195976], [datetime.datetime(2015, 3, 16, 12, 0), 1.0816772], [datetime.datetime(2015, 4, 16, 0, 0), 1.0290958], [datetime.datetime(2015, 5, 16, 12, 0), 2.6539428], [datetime.datetime(2015, 6, 16, 0, 0), 3.4307652], [datetime.datetime(2015, 7, 16, 12, 0), 3.2504485], [datetime.datetime(2015, 8, 16, 12, 0), 2.5487366], [datetime.datetime(2015, 9, 16, 0, 0), 0.35241804], [datetime.datetime(2015, 10, 16, 12, 0), 2.4712648], [datetime.datetime(2014, 11, 16, 0, 0), 0.18294963], [datetime.datetime(2014, 12, 16, 12, 0), 0.13204327], [datetime.datetime(2015, 1, 16, 12, 0), 0.05318553], [datetime.datetime(2015, 2, 15, 0, 0), 0.34240192], [datetime.datetime(2015, 3, 16, 12, 0), 1.3678982], [datetime.datetime(2015, 4, 16, 0, 0), 0.44945353], [datetime.datetime(2015, 5, 16, 12, 0), 1.4077636], [datetime.datetime(2015, 6, 16, 0, 0), 0.65902823], [datetime.datetime(2015, 7, 16, 12, 0), 2.2765038], [datetime.datetime(2015, 8, 16, 12, 0), 2.093973], [datetime.datetime(2015, 9, 16, 0, 0), 2.714291], [datetime.datetime(2015, 10, 16, 12, 0), 0.35507312], [datetime.datetime(2014, 11, 16, 0, 0), 0.31254554], [datetime.datetime(2014, 12, 16, 12, 0), 0.022514295], [datetime.datetime(2015, 1, 16, 12, 0), 0.2022325], [datetime.datetime(2015, 2, 15, 0, 0), 0.51500654], [datetime.datetime(2015, 3, 16, 12, 0), 0.5644128], [datetime.datetime(2015, 4, 16, 0, 0), 0.7911287], [datetime.datetime(2015, 5, 16, 12, 0), 0.7695898], [datetime.datetime(2015, 6, 16, 0, 0), 3.2202513], [datetime.datetime(2015, 7, 16, 12, 0), 3.4671786], [datetime.datetime(2015, 8, 16, 12, 0), 0.5232663], [datetime.datetime(2015, 9, 16, 0, 0), 0.81560314], [datetime.datetime(2015, 10, 16, 12, 0), 0.5004286], [datetime.datetime(2014, 11, 16, 0, 0), 1.229176], [datetime.datetime(2014, 12, 16, 12, 0), 0.24215013], [datetime.datetime(2015, 1, 16, 12, 0), 0.641244], [datetime.datetime(2015, 2, 15, 0, 0), 0.033244014], [datetime.datetime(2015, 3, 16, 12, 0), 1.4303902], [datetime.datetime(2015, 4, 16, 0, 0), 0.97417426], [datetime.datetime(2015, 5, 16, 12, 0), 2.2388763], [datetime.datetime(2015, 6, 16, 0, 0), 1.1739765], [datetime.datetime(2015, 7, 16, 12, 0), 2.131405], [datetime.datetime(2015, 8, 16, 12, 0), 1.3522924], [datetime.datetime(2015, 9, 16, 0, 0), 1.850921], [datetime.datetime(2015, 10, 16, 12, 0), 2.5836248], [datetime.datetime(2014, 11, 16, 0, 0), 1.3244176], [datetime.datetime(2014, 12, 16, 12, 0), 0.20626609], [datetime.datetime(2015, 1, 16, 12, 0), 0.48686036], [datetime.datetime(2015, 2, 15, 0, 0), 0.56055295], [datetime.datetime(2015, 3, 16, 12, 0), 1.19279], [datetime.datetime(2015, 4, 16, 0, 0), 0.49651814], [datetime.datetime(2015, 5, 16, 12, 0), 1.2154142], [datetime.datetime(2015, 6, 16, 0, 0), 3.5210965], [datetime.datetime(2015, 7, 16, 12, 0), 2.9103389], [datetime.datetime(2015, 8, 16, 12, 0), 2.6708305], [datetime.datetime(2015, 9, 16, 0, 0), 0.9893299], [datetime.datetime(2015, 10, 16, 12, 0), 0.015304906], [datetime.datetime(2014, 11, 16, 0, 0), 0.24606898], [datetime.datetime(2014, 12, 16, 12, 0), 0.17924778], [datetime.datetime(2015, 1, 16, 12, 0), 0.5226817], [datetime.datetime(2015, 2, 15, 0, 0), 1.0992111], [datetime.datetime(2015, 3, 16, 12, 0), 1.0592027], [datetime.datetime(2015, 4, 16, 0, 0), 0.55345345], [datetime.datetime(2015, 5, 16, 12, 0), 2.43756], [datetime.datetime(2015, 6, 16, 0, 0), 1.2366621], [datetime.datetime(2015, 7, 16, 12, 0), 1.1939199], [datetime.datetime(2015, 8, 16, 12, 0), 3.5670526], [datetime.datetime(2015, 9, 16, 0, 0), 2.1513865], [datetime.datetime(2015, 10, 16, 12, 0), 0.17826281], [datetime.datetime(2014, 11, 16, 0, 0), 0.19185047], [datetime.datetime(2014, 12, 16, 0, 0), 0.33142585], [datetime.datetime(2015, 1, 16, 0, 0), 0.17706592], [datetime.datetime(2015, 2, 16, 0, 0), 0.12939842], [datetime.datetime(2015, 3, 16, 0, 0), 0.15770492], [datetime.datetime(2015, 4, 16, 0, 0), 0.5526809], [datetime.datetime(2015, 5, 16, 0, 0), 2.3036177], [datetime.datetime(2015, 6, 16, 0, 0), 0.6897724], [datetime.datetime(2015, 7, 16, 0, 0), 3.5882857], [datetime.datetime(2015, 8, 16, 0, 0), 0.4832196], [datetime.datetime(2015, 9, 16, 0, 0), 1.2909276], [datetime.datetime(2015, 10, 16, 0, 0), 2.0389023], [datetime.datetime(2014, 11, 16, 0, 0), 0.45220014], [datetime.datetime(2014, 12, 16, 0, 0), 0.13951139], [datetime.datetime(2015, 1, 16, 0, 0), 0.54272], [datetime.datetime(2015, 2, 16, 0, 0), 0.7042717], [datetime.datetime(2015, 3, 16, 0, 0), 1.3916432], [datetime.datetime(2015, 4, 16, 0, 0), 0.7334498], [datetime.datetime(2015, 5, 16, 0, 0), 2.4111311], [datetime.datetime(2015, 6, 16, 0, 0), 0.5632143], [datetime.datetime(2015, 7, 16, 0, 0), 3.6230378], [datetime.datetime(2015, 8, 16, 0, 0), 1.0739588], [datetime.datetime(2015, 9, 16, 0, 0), 0.6407836], [datetime.datetime(2015, 10, 16, 0, 0), 0.76491606], [datetime.datetime(2014, 11, 16, 0, 0), 0.60798514], [datetime.datetime(2014, 12, 16, 0, 0), 0.92295164], [datetime.datetime(2015, 1, 16, 0, 0), 1.956165], [datetime.datetime(2015, 2, 16, 0, 0), 0.12065205], [datetime.datetime(2015, 3, 16, 0, 0), 0.24137658], [datetime.datetime(2015, 4, 16, 0, 0), 0.7165153], [datetime.datetime(2015, 5, 16, 0, 0), 2.290265], [datetime.datetime(2015, 6, 16, 0, 0), 0.55367684], [datetime.datetime(2015, 7, 16, 0, 0), 0.48462275], [datetime.datetime(2015, 8, 16, 0, 0), 3.0355728], [datetime.datetime(2015, 9, 16, 0, 0), 0.28944403], [datetime.datetime(2015, 10, 16, 0, 0), 0.31943414], [datetime.datetime(2014, 11, 16, 0, 0), 0.4897593], [datetime.datetime(2014, 12, 16, 0, 0), 0.66060466], [datetime.datetime(2015, 1, 16, 0, 0), 0.58972883], [datetime.datetime(2015, 2, 16, 0, 0), 0.21849114], [datetime.datetime(2015, 3, 16, 0, 0), 1.7927823], [datetime.datetime(2015, 4, 16, 0, 0), 1.2815297], [datetime.datetime(2015, 5, 16, 0, 0), 2.580564], [datetime.datetime(2015, 6, 16, 0, 0), 1.3993183], [datetime.datetime(2015, 7, 16, 0, 0), 0.539018], [datetime.datetime(2015, 8, 16, 0, 0), 2.8998299], [datetime.datetime(2015, 9, 16, 0, 0), 0.6856699], [datetime.datetime(2015, 10, 16, 0, 0), 1.3357453], [datetime.datetime(2014, 11, 16, 0, 0), 0.48350984], [datetime.datetime(2014, 12, 16, 0, 0), 0.16278747], [datetime.datetime(2015, 1, 16, 0, 0), 0.85441273], [datetime.datetime(2015, 2, 16, 0, 0), 0.22092977], [datetime.datetime(2015, 3, 16, 0, 0), 0.3587158], [datetime.datetime(2015, 4, 16, 0, 0), 0.72462857], [datetime.datetime(2015, 5, 16, 0, 0), 2.2729144], [datetime.datetime(2015, 6, 16, 0, 0), 4.159633], [datetime.datetime(2015, 7, 16, 0, 0), 1.1491205], [datetime.datetime(2015, 8, 16, 0, 0), 0.753043], [datetime.datetime(2015, 9, 16, 0, 0), 1.7102681], [datetime.datetime(2015, 10, 16, 0, 0), 0.026214987]]'
                 #number_ts.append({'name':graph_original['site_name'],'data':graph_original['for_highchart']})
-                url_user = str(x)
-                url_user = url_user.replace('=', '!')
-                url_user = url_user.replace('&', '~')
+                # url_user = str(x)
+                # url_user = url_user.replace('=', '!')
+                # url_user = url_user.replace('&', '~')
                 if Current_r == "Time Series Converter":
                     interval = str(request.POST['select_interval'])
                     stat = str(request.POST['select_stat'])
@@ -357,12 +366,10 @@ def home(request):
                 string_download = ''.join(download_link)
                 upload_hs = string_download
                 graph_info =TimeSeriesConverter(test_run[0])#prepares data for graphing
-                number_ts.append({'name':graph_original['site_name']+' Convertered','data':graph_info['for_highchart']})
-                legend.append(graph_original['site_name']+' Convertered')
-            timeseries_plot = chartPara(graph_original,number_ts)#plots graph data
+                number_ts.append({'name':graph_original['site_name']+" "+graph_original['data_type']+ ' Convertered','data':graph_info['for_highchart']})
+                #legend.append(graph_original['site_name']+' Convertered')
+            timeseries_plot = chartPara(graph_original,number_ts,graph_original['units'])#plots graph data
 
-    print update_url
-    print "Urllllllllllllllllllllllllllllllllllllllllllllllllllllll"
     if error_message!= None:
         error_bool = "True"
     else:
@@ -477,12 +484,14 @@ def home(request):
 def run_wps(process_id,input,output):
 
     #choose the first wps engine
-    my_engine = WebProcessingService('http://appsdev.hydroshare.org:8282/wps/WebProcessingService', verbose=False, skip_caps=True)
+    #my_engine = WebProcessingService('http://appsdev.hydroshare.org:8282/wps/WebProcessingService', verbose=False, skip_caps=True)
+    my_engine = WebProcessingService('http://appsdev.hydroshare.org:8282/wps/WebProcessingService',verbose=False, skip_caps=True)
     my_engine.getcapabilities()
     #wps_engines = list_wps_service_engines()
     #my_engine = wps_engines[0]
     #choose the r.time-series-converter
     my_process = my_engine.describeprocess(process_id)
+
     my_inputs = my_process.dataInputs
     input_names = [] #getting list of input
     for input1 in my_inputs:
@@ -492,21 +501,26 @@ def run_wps(process_id,input,output):
     request = execution.request
     #set store executeresponse to false
     request = request.replace('storeExecuteResponse="true"', 'storeExecuteResponse="false"')
+
     url_wps = 'http://appsdev.hydroshare.org:8282/wps/WebProcessingService'
 
     wps_request = urllib2.Request(url_wps,request)
     wps_open = urllib2.urlopen(wps_request)
     wps_read = wps_open.read()
 
+
+
     if 'href' in wps_read:
         tag = 'href="'
         location = wps_read.find(tag)
+
         new= wps_read[location+len(tag):len(wps_read)]
         tag2 = '"/>\n    </wps:Output>\n  </wps:ProcessOutputs>\n</wps:'
         location2 = new.find(tag2)
         final = new[0:location2]
         split = final.split()
         wps_request1 = urllib2.Request(split[0])
+
         wps_open1 = urllib2.urlopen(wps_request1)
         wps_read1 = wps_open1.read()
 
